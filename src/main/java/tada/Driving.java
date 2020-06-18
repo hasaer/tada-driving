@@ -1,7 +1,16 @@
 package tada;
 
 import javax.persistence.*;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.BeanUtils;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.util.MimeTypeUtils;
+import tada.config.kafka.KafkaProcessor;
+
 import java.util.List;
 
 @Entity
@@ -20,19 +29,84 @@ public class Driving {
     @PostPersist
     public void onPostPersist(){
         DrivingCreated drivingCreated = new DrivingCreated();
-        BeanUtils.copyProperties(this, drivingCreated);
-        drivingCreated.publishAfterCommit();
+        drivingCreated.setDrivingId(this.getDrivingId());
+        drivingCreated.setStarting((this.getStarting()));
+        drivingCreated.setDestination(this.getDestination());
+        drivingCreated.setDrivingStatus("Running");
+        drivingCreated.setCharge(this.getCharge());
+        drivingCreated.setCallId(this.getCallId());
 
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = null;
 
-        DrivingCanceled drivingCanceled = new DrivingCanceled();
-        BeanUtils.copyProperties(this, drivingCanceled);
-        drivingCanceled.publishAfterCommit();
+        try {
+            json = objectMapper.writeValueAsString(drivingCreated);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("JSON format exception", e);
+        }
 
+        KafkaProcessor processor = Application.applicationContext.getBean(KafkaProcessor.class);
+        MessageChannel outputChannel = processor.outboundTopic();
 
-        DrivingFinished drivingFinished = new DrivingFinished();
-        BeanUtils.copyProperties(this, drivingFinished);
-        drivingFinished.publishAfterCommit();
+        outputChannel.send(MessageBuilder
+                .withPayload(json)
+                .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
+                .build());
+    }
 
+    @PostUpdate
+    public void onPostUpdate() {
+        if ("Finished".equals(this.getDrivingStatus())) {
+            DrivingFinished drivingFinished = new DrivingFinished();
+            drivingFinished.setDrivingId(this.getDrivingId());
+            drivingFinished.setStarting((this.getStarting()));
+            drivingFinished.setDestination(this.getDestination());
+            drivingFinished.setDrivingStatus("Finished");
+            drivingFinished.setCharge(this.getCharge());
+            drivingFinished.setCallId(this.getCallId());
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = null;
+
+            try {
+                json = objectMapper.writeValueAsString(drivingFinished);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("JSON format exception", e);
+            }
+
+            KafkaProcessor processor = Application.applicationContext.getBean(KafkaProcessor.class);
+            MessageChannel outputChannel = processor.outboundTopic();
+
+            outputChannel.send(MessageBuilder
+                    .withPayload(json)
+                    .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
+                    .build());
+        } else {
+            DrivingCanceled drivingCanceled = new DrivingCanceled();
+            drivingCanceled.setDrivingId(this.getDrivingId());
+            drivingCanceled.setStarting((this.getStarting()));
+            drivingCanceled.setDestination(this.getDestination());
+            drivingCanceled.setDrivingStatus("Canceled");
+            drivingCanceled.setCharge(this.getCharge());
+            drivingCanceled.setCallId(this.getCallId());
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = null;
+
+            try {
+                json = objectMapper.writeValueAsString(drivingCanceled);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("JSON format exception", e);
+            }
+
+            KafkaProcessor processor = Application.applicationContext.getBean(KafkaProcessor.class);
+            MessageChannel outputChannel = processor.outboundTopic();
+
+            outputChannel.send(MessageBuilder
+                    .withPayload(json)
+                    .setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
+                    .build());
+        }
 
     }
 

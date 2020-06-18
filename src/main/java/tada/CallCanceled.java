@@ -1,9 +1,21 @@
-
 package tada;
 
-public class Called extends AbstractEvent {
+public class CallCanceled extends AbstractEvent {
 
     private Long callId;
+    private String callStatus;
+    private String starting;
+    private String destination;
+
+    public Long getDrivingId() {
+        return drivingId;
+    }
+
+    public void setDrivingId(Long drivingId) {
+        this.drivingId = drivingId;
+    }
+
+    private Long drivingId;
 
     public String getCallStatus() {
         return callStatus;
@@ -12,10 +24,6 @@ public class Called extends AbstractEvent {
     public void setCallStatus(String callStatus) {
         this.callStatus = callStatus;
     }
-
-    private String callStatus;
-    private String starting;
-    private String destination;
 
     public Integer getCharge() {
         return charge;
@@ -26,6 +34,10 @@ public class Called extends AbstractEvent {
     }
 
     private Integer charge;
+
+    public CallCanceled(){
+        super();
+    }
 
     public Long getCallId() {
         return callId;
