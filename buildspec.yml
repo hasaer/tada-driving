@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    _PROJECT_NAME: "admin11-driving"
+    _PROJECT_NAME: "driving"
     
 phases:
   install:
