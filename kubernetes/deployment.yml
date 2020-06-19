@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: driving
-          image: username/driving:latest
+          image: 271153858532.dkr.ecr.ap-northeast-2.amazonaws.com/admin11-driving:latest
           ports:
             - containerPort: 8080
           readinessProbe:
